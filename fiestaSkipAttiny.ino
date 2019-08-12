@@ -1,5 +1,5 @@
 /************************************************************************
-This code adds functionality for the steering wheel buttons of a mk7 Ford 
+This code adds functionality to the steering wheel buttons of a mk7 Ford 
 Fiesta with the audio package 1. With the correspondent hardware songs 
 can be skipped and paused via the aux cord. Long pressing the prev button
 launches the google assistant on android phones. 
