@@ -16,10 +16,6 @@ GNU General Public License for more details. <http://www.gnu.org/licenses/>
 #include <avr/io.h>
 #include <stdint.h>
 
-#define SERIAL
-//#define SERIALVALUES
-#define SERIALSWITCH
-
 //define relay values
 //duration of relay on
 #define HOLDTIME 100
@@ -58,29 +54,17 @@ struct pressCount {
 };
 
 void setup(){
-  Serial.begin(9600);
-  }
+  //initialize PB4 for relay output
+  DDRB |= (1 << PB4);
+}
 
-int main(void){
-    #ifdef SERIAL
-    
-    for (int i = 0; i < 100; i++){
-      Serial.println("Serial initialized");
-    }
-    #endif
-
-    //initialize PB1 for relay output
-    DDRB |= (1 << PB1);
-  
+int main(void){  
     int16_t ADCvalue;
     struct pressCount Presses = {0};
 
     while (1){
-            ADCvalue = ADCsingleREAD(0);
+            ADCvalue = ADCsingleREAD(3);
             
-            #ifdef SERIALVALUES
-            Serial.println(ADCvalue);
-            #endif
 
 
 
@@ -116,26 +100,19 @@ int main(void){
                                         if (Presses.menues > PRESSTIMES){
                                           pressRelayNtimes(1);
                                           
-                                          #ifdef SERIALSWITCH
-                                          Serial.println("Menue press detected");
-                                          #endif
 
                                           
                                         }
                                         if (Presses.skips > PRESSTIMES){
                                           pressRelayNtimes(2);
                                           
-                                          #ifdef SERIALSWITCH
-                                          Serial.println("Skip press detected");
-                                          #endif
+                                          
                                           
                                         }
                                         if (Presses.prevs > PRESSTIMES){
                                           pressRelayNtimes(3);
                                           
-                                          #ifdef SERIALSWITCH
-                                          Serial.println("Previous press detected");
-                                          #endif
+                                          
                                           
                                         }
 
@@ -155,26 +132,29 @@ int main(void){
 
 void pressRelayNtimes(uint8_t n){
   for (int i = 0; i < n; i++){
-    PORTB |= (1<<PB1);
+    PORTB |= (1<<PB4);
     _delay_ms(HOLDTIME);
-    PORTB &= ~(1<<PB1);
+    PORTB &= ~(1<<PB4);
     _delay_ms(PAUSETIME);
   }
 };
+
 
 
 int16_t ADCsingleREAD(uint8_t adctouse){
     int16_t ADCval;
 
     // use selected analog in pin
-    ADMUX = adctouse;   
+    ADMUX = adctouse;  
+    //if REFS2, REFS1 and REFS0 are 0, Vcc is Reference, works best and doesnt limit programming 
     // use AVcc as reference      
-    ADMUX |= (1 << REFS0);
+    //ADMUX |= (1 << REFS0);
     // clear for 10 bit resolution
     ADMUX &= ~(1 << ADLAR);
 
-    // 128 prescale for 16Mhz
-    ADCSRA |= (1 << ADPS2) | (1 << ADPS1) | (1 << ADPS0);
+    // 8 prescale for 1Mhz (4 and 16 would work good too)
+    ADCSRA |= (1 << ADPS1) | (1 << ADPS0);
+    ADCSRA &= ~(1 << ADPS2);
     // Enable the ADC
     ADCSRA |= (1 << ADEN);
 
