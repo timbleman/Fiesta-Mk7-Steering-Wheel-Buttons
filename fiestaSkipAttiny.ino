@@ -17,13 +17,16 @@ GNU General Public License for more details. <http://www.gnu.org/licenses/>
 #include <stdint.h>
 
 //define relay values
-//duration of relay on
-#define HOLDTIME 100
+//duration of relay short press
+#define SHORTPRESS 100
+//duration of relay long press
+#define LONGPRESS 1000
 //duration between relay on
 #define PAUSETIME 100
 
 //define number of reads needed for registering a press
-#define PRESSTIMES 20
+#define PRESSTIMES 50
+#define LONGPRESSTIMES 600
 
 //define typical values for each state
 #define AVGVOLDOWN 82
@@ -33,12 +36,13 @@ GNU General Public License for more details. <http://www.gnu.org/licenses/>
 #define AVGMENUE 562
 #define AVGIDLE 766
 //margin up and down to counter noise, tune for best results
-#define ERRORMARGIN 5
+#define ERRORMARGIN 10
 
 
 //protoype functions 
 int ADCsingleREAD(uint8_t adctouse);
 void pressRelayNtimes(uint8_t n);
+void longPressRelay();
 
 //structs
 //counts the duration how long a button is pressed
@@ -47,7 +51,6 @@ struct pressCount {
   uint16_t skips;
   uint16_t prevs;
   uint16_t menues;
-  
   //not used
   uint16_t vol_ups;
   uint16_t vol_downs;
@@ -99,7 +102,6 @@ int main(void){
                                         
                                         if (Presses.menues > PRESSTIMES){
                                           pressRelayNtimes(1);
-                                          
 
                                           
                                         }
@@ -109,7 +111,14 @@ int main(void){
                                           
                                           
                                         }
-                                        if (Presses.prevs > PRESSTIMES){
+
+                                        //check if prev button is pressed long or short
+                                        if (Presses.prevs > LONGPRESSTIMES){
+                                          longPressRelay();
+                                          
+                                          
+                                          
+                                        } else if (Presses.prevs > PRESSTIMES){
                                           pressRelayNtimes(3);
                                           
                                           
@@ -130,14 +139,23 @@ int main(void){
 }
 
 
+// activates relay n times --> 1: play/pause; 2: next song; 3; previous song
 void pressRelayNtimes(uint8_t n){
   for (int i = 0; i < n; i++){
     PORTB |= (1<<PB4);
-    _delay_ms(HOLDTIME);
+    _delay_ms(SHORTPRESS);
     PORTB &= ~(1<<PB4);
     _delay_ms(PAUSETIME);
   }
 };
+
+
+// activates relay long --> starts google assistant
+void longPressRelay(){
+   PORTB |= (1<<PB4);
+   _delay_ms(LONGPRESS);
+   PORTB &= ~(1<<PB4);
+}
 
 
 
