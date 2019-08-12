@@ -1,5 +1,13 @@
 /************************************************************************
-<one line to give the program's name and a brief idea of what it does.>
+This code adds functionality for the steering wheel buttons of a mk7 Ford 
+Fiesta with the audio package 1. With the correspondent hardware songs 
+can be skipped and paused via the aux cord. Long pressing the prev button
+launches the google assistant on android phones. 
+Wiring diagrams and a PCB-design are in the repository.
+A sleep mode may be added, but isn't necessary depending on the power
+source and due to the low energy consumption of the ATtiny45.
+Settings may need to be tweaked.
+
 Copyright (C) 2019  Tim Fraunholz
 
 This program is free software: you can redistribute it and/or modify
@@ -36,7 +44,8 @@ GNU General Public License for more details. <http://www.gnu.org/licenses/>
 #define AVGMENUE 562
 #define AVGIDLE 766
 //margin up and down to counter noise, tune for best results
-#define ERRORMARGIN 10
+//can be a lot smaller than 15, however values are far apart, so it doesn't matter
+#define ERRORMARGIN 15
 
 
 //protoype functions 
@@ -56,85 +65,73 @@ struct pressCount {
   uint16_t vol_downs;
 };
 
-void setup(){
-  //initialize PB4 for relay output
-  DDRB |= (1 << PB4);
-}
 
 int main(void){  
     int16_t ADCvalue;
     struct pressCount Presses = {0};
 
+    //initialize PB4 for relay output
+    DDRB |= (1 << PB4);
+
     while (1){
-            ADCvalue = ADCsingleREAD(3);
-            
-
-
-
-            //check current state
-            switch(ADCvalue){
-
-              case 0 ... ERRORMARGIN:          //0 --> radio is turned off, should trigger stand by
-                                        Presses.zeros++;
-                                        break;
-
-              case (AVGVOLDOWN-ERRORMARGIN) ... (AVGVOLDOWN+ERRORMARGIN)://vol down pressed
-                                        Presses.vol_downs++;
-                                        break;
- 
-              case (AVGVOLUP-ERRORMARGIN) ... (AVGVOLUP+ERRORMARGIN)://vol up pressed
-                                        Presses.vol_ups++;
-                                        break;
-
-              case (AVGSKIP-ERRORMARGIN) ... (AVGSKIP+ERRORMARGIN)://skip
-                                        Presses.skips++;
-                                        break;
-
-              case (AVGPREV-ERRORMARGIN) ... (AVGPREV+ERRORMARGIN)://previous
-                                        Presses.prevs++;
-                                        break;
-                                        
-              case (AVGMENUE-ERRORMARGIN) ... (AVGMENUE+ERRORMARGIN)://menue/m-button
-                                        Presses.menues++;
-                                        break;
-              //case (765):
-              case (AVGIDLE-ERRORMARGIN) ... (AVGIDLE+ERRORMARGIN): //idle, check if a button has been pushed
-                                        
-                                        if (Presses.menues > PRESSTIMES){
-                                          pressRelayNtimes(1);
-
-                                          
-                                        }
-                                        if (Presses.skips > PRESSTIMES){
-                                          pressRelayNtimes(2);
-                                          
-                                          
-                                          
-                                        }
-
-                                        //check if prev button is pressed long or short
-                                        if (Presses.prevs > LONGPRESSTIMES){
-                                          longPressRelay();
-                                          
-                                          
-                                          
-                                        } else if (Presses.prevs > PRESSTIMES){
-                                          pressRelayNtimes(3);
-                                          
-                                          
-                                          
-                                        }
-
-                                        memset(&Presses, 0, sizeof(Presses));
-                                        
-                                        break;
-              default: 
-                                        
-                                        break;
-            }
+      //read output of the steering wheel buttons
+      ADCvalue = ADCsingleREAD(3);
+      
+      //check current state, increment button press times
+      switch(ADCvalue){
   
-            //delay 1ms, to check only in discrete intervals
-            _delay_ms(1);
+        case 0 ... ERRORMARGIN:          //0 --> radio is turned off, could trigger stand by
+                                  Presses.zeros++;
+                                  break;
+  
+        case (AVGVOLDOWN-ERRORMARGIN) ... (AVGVOLDOWN+ERRORMARGIN)://vol down pressed
+                                  Presses.vol_downs++;
+                                  break;
+  
+        case (AVGVOLUP-ERRORMARGIN) ... (AVGVOLUP+ERRORMARGIN)://vol up pressed
+                                  Presses.vol_ups++;
+                                  break;
+  
+        case (AVGSKIP-ERRORMARGIN) ... (AVGSKIP+ERRORMARGIN)://skip
+                                  Presses.skips++;
+                                  break;
+  
+        case (AVGPREV-ERRORMARGIN) ... (AVGPREV+ERRORMARGIN)://previous
+                                  Presses.prevs++;
+                                  break;
+                                  
+        case (AVGMENUE-ERRORMARGIN) ... (AVGMENUE+ERRORMARGIN)://menue/m-button
+                                  Presses.menues++;
+                                  break;
+                                  
+        case (AVGIDLE-ERRORMARGIN) ... (AVGIDLE+ERRORMARGIN): //idle, check if a button has been pushed
+  
+                                  //check if buttons have been pressed
+                                  if (Presses.menues > PRESSTIMES){
+                                    pressRelayNtimes(1); 
+                                  }
+                                  
+                                  if (Presses.skips > PRESSTIMES){
+                                    pressRelayNtimes(2);
+                                  }
+  
+                                  //check if prev button is pressed long or short
+                                  if (Presses.prevs > LONGPRESSTIMES){
+                                    longPressRelay();   
+                                  } else if (Presses.prevs > PRESSTIMES){
+                                    pressRelayNtimes(3);  
+                                  }
+                                  
+                                  //reset button counts
+                                  memset(&Presses, 0, sizeof(Presses));
+                                  
+                                  break;
+        default: 
+                                  break;
+      }
+  
+      //delay 1ms, to check only in discrete intervals
+      _delay_ms(1);
     }
 }
 
@@ -165,9 +162,9 @@ int16_t ADCsingleREAD(uint8_t adctouse){
     // use selected analog in pin
     ADMUX = adctouse;  
     //if REFS2, REFS1 and REFS0 are 0, Vcc is Reference, works best and doesnt limit programming 
-    // use AVcc as reference      
+    // use AVcc as reference, must be connected to Vcc via jumpers    
     //ADMUX |= (1 << REFS0);
-    // clear for 10 bit resolution
+    //clear for 10 bit resolution
     ADMUX &= ~(1 << ADLAR);
 
     // 8 prescale for 1Mhz (4 and 16 would work good too)
