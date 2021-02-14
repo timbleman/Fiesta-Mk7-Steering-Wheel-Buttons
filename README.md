@@ -14,6 +14,7 @@ Wiring diagrams and a PCB-design (designed in KiCad) are in the repository.
 The directory pics/ includes images that explain which wires in the steering console are tapped.
 The electronics are stored beneath the center console at the gear lever.
 It is recommended to wrap the electronics in some foam, to damped the clicking of the relay.
+The code is entirely low level and does not rely on the Arduino libraries.
 
 ## Future work
 A sleep mode may be added, but isn't necessary depending on the power
