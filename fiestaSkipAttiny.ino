@@ -34,7 +34,7 @@ GNU General Public License for more details. <http://www.gnu.org/licenses/>
 
 //define number of reads needed for registering a press
 #define PRESSTIMES 50
-#define LONGPRESSTIMES 600
+#define LONGPRESSTIMES 700
 
 //define typical values for each state
 #define AVGVOLDOWN 82
@@ -98,6 +98,9 @@ int main(void){
   
         case (AVGPREV-ERRORMARGIN) ... (AVGPREV+ERRORMARGIN)://previous
                                   Presses.prevs++;
+                                  // Start long press while still holding the button
+                                  if (Presses.prevs >= LONGPRESSTIMES)
+                                    longPressRelay();
                                   break;
                                   
         case (AVGMENUE-ERRORMARGIN) ... (AVGMENUE+ERRORMARGIN)://menue/m-button
@@ -107,23 +110,19 @@ int main(void){
         case (AVGIDLE-ERRORMARGIN) ... (AVGIDLE+ERRORMARGIN): //idle, check if a button has been pushed
   
                                   //check if buttons have been pressed
-                                  if (Presses.menues > PRESSTIMES){
+                                  if (Presses.menues > PRESSTIMES)
                                     pressRelayNtimes(1); 
-                                  }
                                   
-                                  if (Presses.skips > PRESSTIMES){
+                                  if (Presses.skips > PRESSTIMES)
                                     pressRelayNtimes(2);
-                                  }
   
                                   //check if prev button is pressed long or short
-                                  if (Presses.prevs > LONGPRESSTIMES){
-                                    longPressRelay();   
-                                  } else if (Presses.prevs > PRESSTIMES){
+                                  if (Presses.prevs > PRESSTIMES && Presses.prevs < LONGPRESSTIMES)
                                     pressRelayNtimes(3);  
-                                  }
                                   
                                   //reset button counts
-                                  memset(&Presses, 0, sizeof(Presses));
+                                  if (Presses.menues > 0 || Presses.skips > 0 || Presses.prevs > 0)
+                                    memset(&Presses, 0, sizeof(Presses));
                                   
                                   break;
         default: 
@@ -155,15 +154,15 @@ void longPressRelay(){
 }
 
 
-
+// read analog value from adc pin
 int16_t ADCsingleREAD(uint8_t adctouse){
     int16_t ADCval;
 
     // use selected analog in pin
     ADMUX = adctouse;  
     //if REFS2, REFS1 and REFS0 are 0, Vcc is Reference, works best and doesnt limit programming 
-    // use AVcc as reference, must be connected to Vcc via jumpers    
-    //ADMUX |= (1 << REFS0);
+    // use AREF as reference, must be connected to Vcc    
+    //ADMUX &= ~((1 << REFS1) | (1 << REFS0));
     //clear for 10 bit resolution
     ADMUX &= ~(1 << ADLAR);
 
