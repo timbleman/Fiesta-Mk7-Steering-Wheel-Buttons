@@ -1,4 +1,4 @@
-#Fiesta-Mk7-Steering-Wheel-Buttons
+# Fiesta-Mk7-Steering-Wheel-Buttons
 
 ## Introduction
 My Ford Fiesta has media buttons on its steering wheel, but these have no function when using the AUX audio input.
@@ -13,6 +13,7 @@ The headset button shorts the function and ground terminal of the AUX cable.
 Wiring diagrams and a PCB-design (designed in KiCad) are in the repository.
 The directory pics/ includes images that explain which wires in the steering console are tapped.
 The electronics are stored beneath the center console at the gear lever.
+It is recommended to wrap the electronics in some foam, to damped the clicking of the relay.
 
 ## Future work
 A sleep mode may be added, but isn't necessary depending on the power
